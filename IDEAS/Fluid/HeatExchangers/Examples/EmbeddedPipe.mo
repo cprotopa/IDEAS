@@ -1,5 +1,6 @@
 within IDEAS.Fluid.HeatExchangers.Examples;
 model EmbeddedPipe "Testing the floorheating according to Koschenz, par. 4.5.1"
+  import Buildings;
 
   extends Modelica.Icons.Example;
 
@@ -11,7 +12,9 @@ model EmbeddedPipe "Testing the floorheating according to Koschenz, par. 4.5.1"
     redeclare package Medium = Medium,
     m_flow(start=12*24/3600),
     m_flow_nominal=12*24/3600,
-    T_start=303.15)
+    riseTime=60,
+    T_start=303.15,
+    filteredMassFlowRate=false)
     annotation (Placement(transformation(extent={{-36,-14},{-16,6}})));
   Modelica.Thermal.HeatTransfer.Sources.FixedTemperature prescribedTemperature(
       T=293.15) annotation (Placement(transformation(extent={{8,64},{28,84}})));
@@ -30,9 +33,9 @@ model EmbeddedPipe "Testing the floorheating according to Koschenz, par. 4.5.1"
   Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature TSet
     annotation (Placement(transformation(extent={{-28,-50},{-8,-30}})));
   Modelica.Blocks.Sources.Pulse pulse(
-    period=7200,
+    startTime=0,
     offset=0,
-    startTime=0)
+    period=72000)
     annotation (Placement(transformation(extent={{-88,30},{-68,50}})));
   BaseClasses.NakedTabs nakedTabs(radSlaCha=radSlaCha_ValidationEmpa)
     annotation (Placement(transformation(extent={{102,2},{122,22}})));
@@ -69,7 +72,7 @@ model EmbeddedPipe "Testing the floorheating according to Koschenz, par. 4.5.1"
         origin={100,-32})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(
                                                    T=60, y_start=1)
-    annotation (Placement(transformation(extent={{-54,30},{-34,50}})));
+    annotation (Placement(transformation(extent={{-58,62},{-38,82}})));
 equation
 
   connect(convection.fluid, prescribedTemperature.port) annotation (Line(
@@ -108,10 +111,6 @@ equation
       points={{-87,-4},{-96,-4},{-96,-40},{-88,-40}},
       color={0,0,127},
       smooth=Smooth.None));
-  connect(firstOrder.y, TSet.T) annotation (Line(
-      points={{-65,-40},{-30,-40}},
-      color={0,0,127},
-      smooth=Smooth.None));
   connect(heatedPipe.port_b, TSen_emb_sup.port_a) annotation (Line(
       points={{20,-5},{26,-5},{26,-6},{36,-6}},
       color={0,127,255},
@@ -129,11 +128,15 @@ equation
       color={0,127,255},
       smooth=Smooth.None));
   connect(pulse.y, firstOrder1.u) annotation (Line(
-      points={{-67,40},{-56,40}},
+      points={{-67,40},{-62,40},{-62,72},{-60,72}},
       color={0,0,127},
       smooth=Smooth.None));
-  connect(firstOrder1.y, pump.m_flowSet) annotation (Line(
-      points={{-33,40},{-26,40},{-26,6}},
+  connect(pulse.y, pump.m_flowSet) annotation (Line(
+      points={{-67,40},{-26,40},{-26,6.4}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(firstOrder.y, TSet.T) annotation (Line(
+      points={{-65,-40},{-30,-40}},
       color={0,0,127},
       smooth=Smooth.None));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
