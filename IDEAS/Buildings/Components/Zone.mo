@@ -31,10 +31,10 @@ protected
         rotation=-90,
         origin={-54,-44})));
   BaseClasses.AirLeakage airLeakage(
-    redeclare package Medium = IDEAS.Media.Air,
     m_flow_nominal=V/3600*n50/20,
     V=V,
-    n50=0.1)
+    n50=0.1,
+    redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{40,30},{60,50}})));
   IDEAS.Buildings.Components.BaseClasses.ZoneLwDistribution radDistrLw(final
       nSurf=nSurf, final linear=linear)
@@ -191,6 +191,6 @@ end for;
 <p><h4><font color=\"#008000\">Validation </font></h4></p>
 <p>By means of the <code>BESTEST.mo</code> examples in the <code>Validation.mo</code> package.</p>
 </html>"),
-    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
-            100}}),     graphics));
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+            100,100}}), graphics));
 end Zone;
