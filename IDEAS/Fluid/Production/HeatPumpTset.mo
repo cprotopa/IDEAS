@@ -26,7 +26,7 @@ model HeatPumpTset "Heat pump using a temperature setpoint"
   parameter Real uHigh=2.5 "Upper bound of the hysteresis control";
 equation
   cop =  if hysteresis.y then  copTable.y else 1;
-  P_el = if hysteresis.y then  powerTable.y else 0;
+  P_el = if hysteresis.y then  powerTable.y*sca else 0;
 
   P_evap=P_el*(cop-1);
   P_cond=P_el*cop;
