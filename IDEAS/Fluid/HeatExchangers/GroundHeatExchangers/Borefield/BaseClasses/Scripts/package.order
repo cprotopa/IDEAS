@@ -3,3 +3,4 @@ readTrajectoryTRSHX
 readTrajectorytVec
 readTrajectoryTResSho
 readTrajectoryVecLen
+readAggregationMatrixSize

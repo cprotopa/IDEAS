@@ -16,10 +16,17 @@ model MultipleBoreHoles
     final computeFlowResistance=true, dp_nominal = 0);
 
   // General parameters of borefield
-  replaceable parameter Borefield.Data.Records.BorefieldData bfData
-    constrainedby Data.Records.BorefieldData
+  replaceable parameter Borefield.Data.Records.BorefieldData bfData(aggMat(rendering=rendering))
+    constrainedby Data.Records.BorefieldData(aggMat(rendering=rendering))
     annotation (choicesAllMatching=true,Placement(transformation(extent={{-90,-88},
             {-70,-68}})));
+
+  // Preloading and saving parameters
+  parameter Boolean saveAggMat = false
+    "if true, the aggragation matrix will at bfData.aggMat.savePath";
+  parameter Boolean loadAggMat = false
+    "true if the aggregation matrix for the parameters of bfData has already been saved and should be loaded rather than computed";
+  final parameter Boolean rendering = if loadAggMat then false else true;
 
   //General parameters of aggregation
   parameter Integer p_max=5
@@ -48,7 +55,7 @@ model MultipleBoreHoles
   Modelica.SIunits.HeatFlowRate QAve_flow
     "Average heat flux over a time period";
 
-protected
+//protected
   Medium.ThermodynamicState sta_hcf
     "thermodynamic state for heat carrier fluid at temperature T_ft";
 
@@ -65,6 +72,11 @@ protected
             rArr=rArr)
     "nb of aggregated pulse at end of each aggregation cells";
   final parameter Real[q_max,p_max] kappaMat=
+    if loadAggMat then
+      readMatrix(
+        fileName=bfData.aggMat.savePath+bfData.aggMat.name+".mat",
+        matrixName="kappaMat",rows=q_max,columns=p_max)
+    else
       Borefield.BaseClasses.Aggregation.transientFrac(
             q_max=q_max,
             p_max=p_max,
@@ -75,6 +87,8 @@ protected
             nuMat=nuMat,
             TSteSta=TSteSta)
     "transient thermal resistance of each aggregation cells";
+      //load the aggregation matrix from file
+      //calculate the aggregation matrix
 
   final parameter Integer nbOfAggPulse=nuMat[end, end]
     "number of aggregated pulse";
@@ -92,6 +106,7 @@ protected
   Modelica.SIunits.Time startTime "Start time of the simulation";
 
 public
+  parameter Boolean statusWriteMatrix(fixed=false);
   Modelica.SIunits.Temperature T_fts
     "average of heat carrier fluid temperature between in and outlet";
 
@@ -151,6 +166,14 @@ initial algorithm
   // Initialisation of the internal energy (zeros) and the load vector. Load vector have the same lenght as the number of aggregated pulse and cover lenSim
   U := 0;
   UOld := 0;
+
+  if saveAggMat then
+    //write the aggregation matrix to file
+    statusWriteMatrix :=writeMatrix(
+      fileName=bfData.aggMat.savePath+bfData.aggMat.name+".mat", matrixName="kappaMat", matrix=kappaMat, append=false);
+  else
+    statusWriteMatrix :=false;
+  end if;
 equation
   assert( abs(TSen_in.port_a.m_flow - bfData.m_flow_nominal) < 0.001 or abs(TSen_in.port_a.m_flow) < Modelica.Constants.eps, "This borefield model only works for fixed mass flow rate as defined in bfData.SteRes.m_flow");
   assert( time < lenSim, "The chosen value for lenSim is too small. It cannot cover the simulation time!");
