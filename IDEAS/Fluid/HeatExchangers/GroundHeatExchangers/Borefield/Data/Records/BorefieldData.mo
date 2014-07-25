@@ -9,9 +9,9 @@ record BorefieldData
       __Dymola_choicesAllMatching=true);
   Soi soi;
 
-  replaceable record Fill =   Filling             constrainedby Filling
+  replaceable record Fil =   Filling             constrainedby Filling
                         annotation (__Dymola_choicesAllMatching=true);
-  Fill fil;
+  Fil fil;
 
   replaceable record Geo =   Geometry              constrainedby Geometry
                           annotation (__Dymola_choicesAllMatching=true);
@@ -25,18 +25,25 @@ record BorefieldData
     annotation (__Dymola_choicesAllMatching=true);
   Adv adv;
 
-  replaceable record ShoTerRes =
-                              ShortTermResponse
-                                             constrainedby ShortTermResponse
-    annotation (__Dymola_choicesAllMatching=true);
-  ShoTerRes shoTerRes;
-  replaceable record AggMat = AggregationMatrix
-                                             constrainedby AggregationMatrix
-    annotation (__Dymola_choicesAllMatching=true);
-  AggMat aggMat;
+//   replaceable record ShoTerRes =
+//                               ShortTermResponse
+//                                              constrainedby ShortTermResponse
+//     annotation (__Dymola_choicesAllMatching=true);
+//   ShoTerRes shoTerRes;
+//   replaceable record AggMat = AggregationMatrix
+//                                              constrainedby AggregationMatrix
+//     annotation (__Dymola_choicesAllMatching=true);
+//   AggMat aggMat;
 
   Modelica.SIunits.MassFlowRate m_flow_nominal = steRes.m_flow*geo.nbBh/geo.nbSer
     "total nominal flow to the borefield";
   Modelica.SIunits.Power P_the_nominal = geo.hBor*geo.nbBh*50
     "nominal thermal power of the borefield";
+
+  String pathModelica = "IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.Data.Records.BorefieldData"
+    "Modelica path of the record";
+  String pathAbsolute = Modelica.Utilities.Files.loadResource("modelica://IDEAS/Fluid/HeatExchangers/GroundHeatExchangers/Borefield/Data/Records")
+    "absolute (computer) path of the record";
+  final String pathAbs = Modelica.Utilities.Strings.replace(pathAbsolute, "\\", "/")
+    "replace the '' by '/' as the former are not recognized";
 end BorefieldData;
