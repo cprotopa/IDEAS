@@ -4,13 +4,14 @@ function initializeModel
   input Data.Records.Filling fil "Thermal properties of the filling material";
   input Data.Records.General gen "General data of the borefield";
 
-  output String sha;
-  output Real[1,gen.tBre_d + 1] TResSho;
-  output Boolean existShoTerRes;
+  output String sha "pseudo SHA code (unique code) of the record soi and gen";
+  output Real[1,gen.tBre_d + 1] TResSho
+    "Short term response temperature vector of the borefield obtained calling the model IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.BoreHoles.Examples.SingleBoreHoleSerStepLoadScript";
+  output Boolean existShoTerRes
+    "True if the aggregation matrix has already been calculated and stored in the simulation folder";
 
 protected
-  String pathSave;
-  String dir;
+  String pathSave "path of the saving folder";
 algorithm
   // --------------- Generate SHA-code and path
   sha := shaBorefieldRecords(
@@ -24,23 +25,11 @@ algorithm
       gen.pathCom,
       "\\",
       "/"));
-  if Modelica.Utilities.Files.exist("C:") then
-    dir :="C://.BfData";
-  elseif Modelica.Utilities.Files.exist("/tmp") then
-    dir :="/tmp/.BfData";
-  else
-    dir :="";
-    assert(false,String(sha) + "\n
-************************************************************************************************************************ \n 
-You do not have the writing permission on the C: or home/ folder. Change the variable dir in
-IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.Scripts.saveAggregationMatrix to 
-write the temperory file at a different location. \n
-************************************************************************************************************************ \n ");
-  end if;
 
-  Modelica.Utilities.Files.createDirectory(dir);
+  //creation of a folder .BfData in the simulation folder
+  Modelica.Utilities.Files.createDirectory(".BfData");
 
-  pathSave := dir + "/" + sha;
+  pathSave := ".BfData/" + sha;
 
   // --------------- Check if the short term response (TResSho) needs to be calculated or loaded
   if not Modelica.Utilities.Files.exist(pathSave + "ShoTermData.mat") then
@@ -63,7 +52,7 @@ write the temperory file at a different location. \n
     columns=gen.tBre_d + 1);
 
     annotation (Documentation(info="<html>
-    <p>  This function calculates the short-term wall temperature response of a borefield for given parameters and save it in a hidden folder C:\.BfData\ for windows and C:\.tmp\ for Linux.</p>
+    <p>  This function calculates the short-term wall temperature response of a borefield for given parameters and save it in a hidden folder .BfData in the simulation folder.</p>
     <p> Firstly, a SHA-code of the records soi, fil and gen are computed and summed by the function shaBorefieldRecords. The algorithm checks then if the step response for these parameters already 
     exists in the temperory file. If not, a response vector is computed by the function ShortTimeResponseHX and saved under the name SHA+ShoTermData.mat.</p>
     <p> Remark: by calling the function, three 'true' should appear in the command window for:</p>

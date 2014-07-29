@@ -20,10 +20,12 @@ function ShortTimeResponseHX
 
   input String pathSave "save path for the result file";
 
-  output Real[1,gen.tBre_d + 1] TResSho;
-  output Real[2,gen.tBre_d + 1] readData;
+  output Real[1,gen.tBre_d + 1] TResSho
+    "Short term response temperature vector of the borefield obtained calling the model IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.BoreHoles.Examples.SingleBoreHoleSerStepLoadScript";
 
 protected
+  Real[2,gen.tBre_d + 1] readData "values from the simulation";
+
   final parameter String modelToSimulate="IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.BoreHoles.Examples.SingleBoreHoleSerStepLoadScript"
     "model to simulate";
 
@@ -47,11 +49,6 @@ algorithm
     method="dassl",
    resultFile=pathSave + "_sim");
 
-    // +
-    //  "( soi=" + soi.pathMod + "(), " +
-    //  "fil=" + fil.pathMod + "()," +
-    //  "gen=" + gen.pathMod + "())"
-
   // First columns are shorttime, last column is steady state
     readData := cat(
       1,
@@ -66,5 +63,15 @@ algorithm
     writeMatrix(
         fileName=pathSave + "ShoTermData.mat", matrixName="TResSho", matrix=TResSho, append=false);
 
-  annotation ();
+    annotation (Documentation(info="<html>
+    <p>  See IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.Scripts.initializeModel.
+    </p>
+</html>", revisions="<html>
+<ul>
+<li>
+July 2014, by Damien Picard:<br>
+First implementation.
+</li>
+</ul>
+</html>"));
 end ShortTimeResponseHX;
