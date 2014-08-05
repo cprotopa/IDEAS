@@ -18,7 +18,7 @@ public
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_b port_b(T(start=TStart))
     annotation (Placement(transformation(extent={{90,-10},{110,10}})));
 
-  MonoLayerOpaqueNf monoLayerOpaqueNf(A=A, mat=mat, inc=inc) if notFictive
+  MonoLayerOpaqueNf monoLayerOpaqueNf(A=A, mat=mat, inc=inc, TStart=TStart) if notFictive
     annotation (Placement(transformation(extent={{-10,-50},{10,-30}})));
 equation
   connect(port_a, monoLayerOpaqueNf.port_a) annotation (Line(
