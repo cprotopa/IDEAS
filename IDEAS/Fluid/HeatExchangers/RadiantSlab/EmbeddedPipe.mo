@@ -10,21 +10,21 @@ model EmbeddedPipe
     annotation (choicesAllMatching=true);
   extends IDEAS.Fluid.Interfaces.Partials.PipeTwoPort(
   final m=Modelica.Constants.pi/4*(RadSlaCha.d_a - 2*RadSlaCha.s_r)^2*L_r*Medium.density_pTX(Medium.p_default, Medium.T_default, Medium.X_default),
-  res(use_dh=true, dh= if RadSlaCha.tabs then RadSlaCha.d_a - 2*RadSlaCha.s_r else 1),
+  res(use_dh=true, dh= if RadSlaCha.tabs then pipeDiaInt else 1),
   final dp_nominal=if RadSlaCha.tabs and use_dp then Modelica.Fluid.Pipes.BaseClasses.WallFriction.Detailed.pressureLoss_m_flow(
-      m_flow=m_flow_nominal,
+      m_flow=m_flow_nominal/nParCir,
       rho_a=rho_default,
       rho_b=rho_default,
       mu_a=mu_default,
       mu_b=mu_default,
-      length=pipeEqLen,
+      length=pipeEqLen/nParCir,
       diameter=RadSlaCha.d_a - 2*RadSlaCha.s_r,
       roughness=roughness,
-      m_flow_small=m_flow_small) else 0);
+      m_flow_small=m_flow_small/nParCir) else 0);
 
   // General model parameters ////////////////////////////////////////////////////////////////
   // in partial: parameter SI.MassFlowRate m_flowMin "Minimal flowrate when in operation";
-  final parameter Modelica.SIunits.Length L_r=A_floor/RadSlaCha.T
+  final parameter Modelica.SIunits.Length L_r=A_floor/RadSlaCha.T/nParCir
     "Length of the circuit";
   parameter Boolean use_dp = false "Set to true to calculate pressure drop";
   parameter Modelica.SIunits.Length roughness(min=0) = 2.5e-5
@@ -44,10 +44,20 @@ annotation(Dialog(tab="Pressure drop"));
   parameter Modelica.SIunits.Length pipeEqLen = pipeBendEqLen + (L_floor-2*RadSlaCha.T)*N_pipes
     "Total pipe equivalent length, default assuming 180 dg turns starting at RadSlaCha.T from the end of the slab"
 annotation(Dialog(tab="Pressure drop"));
-  parameter Modelica.SIunits.MassFlowRate m_flowMin
-    "Minimal flowrate when in operation";
+  parameter Modelica.SIunits.MassFlowRate m_flowMin = m_flow_nominal*0.5
+    "Minimal flowrate when in operation - used for determining required series discretisation";
+
+  parameter Real nParCir
+    "Number of parallel equally sized circuits in the tabs";
 
   parameter Modelica.SIunits.Area A_floor "Floor/tabs surface area";
+
+  parameter Boolean lamFlo = false
+    "Set to true if heat transfer correlations for laminar flow need to be used";
+
+  final parameter Modelica.SIunits.Area A_pipe=
+    Modelica.Constants.pi/4*pipeDiaInt^2
+    "Pipe internal cross section surface area";
 
   // Resistances ////////////////////////////////////////////////////////////////
   // there is no R_z in the model because the dynamics of the water is explicitly simulated
@@ -68,13 +78,15 @@ annotation(Dialog(tab="Pressure drop"));
 
   // Auxiliary parameters and variables ////////////////////////////////////////////////////////////////
 
-  Modelica.SIunits.Velocity flowSpeed=port_a.m_flow/Medium.density(state_default)/(Modelica.Constants.pi
-      /4*(RadSlaCha.d_a - 2*RadSlaCha.s_r)^2) "flow speed through the pipe";
-  //Reynold number Re = ( (m_flow / rho / A) * D * rho )  / mu.
-  final parameter Modelica.SIunits.ReynoldsNumber rey=
-    m_flowMin/(Modelica.Constants.pi/4*(RadSlaCha.d_a - 2*RadSlaCha.s_r)^2)*(RadSlaCha.d_a - 2*RadSlaCha.s_r)/
-    Medium.dynamicViscosity(state_default)
-    "Fix Reynolds number for assert of turbulent flow";
+  Modelica.SIunits.Velocity flowSpeed=port_a.m_flow/nParCir/rho_default/A_pipe
+    "flow speed through the pipe";
+  //Reynold number Re = ( (m_flow / rho / A) * D * rho )  / mu / numParCir.
+  final parameter Modelica.SIunits.ReynoldsNumber reyMin=
+    m_flowMin/nParCir/A_pipe*pipeDiaInt/mu_default
+    "Reynolds at minimum mass flow rate";
+  final parameter Modelica.SIunits.ReynoldsNumber reyNom=
+    m_flow_nominal/nParCir/A_pipe*pipeDiaInt/mu_default
+    "Reynolds number at nominal mass flow rate";
   Real m_flowSp(unit="kg/(m2.s)")=port_a.m_flow/A_floor
     "mass flow rate per unit floor area";
   Real m_flowMinSp(unit="kg/(m2.s)")=m_flowMin/A_floor
@@ -116,10 +128,13 @@ public
   Modelica.Thermal.HeatTransfer.Components.Convection R_w
     annotation (Placement(transformation(extent={{-22,14},{-2,34}})));
 initial equation
-  assert(rey > 2700,
-    "The minimal flowrate leads to laminar flow.  Adapt the model (specifically R_w_val) to these conditions");
-  assert(m_flowMinSp*Medium.specificHeatCapacityCp(state_default)*(R_w_val + R_r_val + R_x_val) >= 0.5,
-    "Model is not valid, division in n parts is required");
+   assert(reyMin > 2700 or lamFlo,
+     "The minimal flowrate leads to laminar flow. This is not valid when using the turbulent flow model. Set lamFlo to true if you want to use a laminar flow model");
+   assert(reyNom < 4000 or not lamFlo,
+     "The nominal flowrate leads to turbulent flow. This is not valid when using the laminar flow model.  Set lamFlo to false if you want to use a turbulent flow model");
+
+   assert(m_flowMinSp*Medium.specificHeatCapacityCp(state_default)*(R_w_val + R_r_val + R_x_val) >= 0.5,
+     "Model is not valid, division in n parts is required");
   if RadSlaCha.tabs then
     assert(RadSlaCha.S_1 > 0.3*RadSlaCha.T, "Thickness of the concrete or screed layer above the tubes is smaller than 0.3 * the tube interdistance. 
     The model is not valid for this case");
@@ -136,9 +151,12 @@ equation
   //For low or zero mass flow rate an average convective heat transfer coefficient h = 200 for laminar flow is used.
   //based on [Koshenz, 2000] figure 4.5
   R_w_val = if noEvent(abs(port_a.m_flow) > m_flowMin/10) then
-  RadSlaCha.T^0.13/8/Modelica.Constants.pi*abs(((RadSlaCha.d_a - 2*RadSlaCha.s_r)
-      /(m_flowSp*L_r)))^0.87 else
-      RadSlaCha.T/(200*(RadSlaCha.d_a - 2*RadSlaCha.s_r)*Modelica.Constants.pi);
+  if lamFlo then
+      RadSlaCha.T/(4*Medium.thermalConductivity(state_default)*Modelica.Constants.pi)
+    else
+  RadSlaCha.T^0.13/8/Modelica.Constants.pi*abs((pipeDiaInt/(m_flowSp*L_r)))^0.87 else
+      RadSlaCha.T/(200*pipeDiaInt*Modelica.Constants.pi);
+                  //assumes Nu_D = 4: between constant heat flow and constant wall temperature
 
   connect(R_r.port_b, R_x.port_a) annotation (Line(
       points={{32,24},{46,24}},
