@@ -2,11 +2,7 @@ within IDEAS.Buildings.Components;
 model Zone "thermal building zone"
 
   extends IDEAS.Buildings.Components.Interfaces.StateZone;
-
-  replaceable package Medium = IDEAS.Media.Air
-    constrainedby Modelica.Media.Interfaces.PartialMedium
-    "Medium in the component"
-      annotation (choicesAllMatching = true);
+  extends IDEAS.Fluid.Interfaces.LumpedVolumeDeclarations;
 
   parameter Modelica.SIunits.Volume V "Total zone air volume";
   parameter Real n50(min=0.01)=0.4
@@ -52,8 +48,16 @@ public
   Fluid.MixingVolumes.MixingVolume         vol(
     V=V,
     m_flow_nominal=m_flow_nominal,
-    nPorts=4,
-    redeclare package Medium = Medium)         annotation (Placement(
+    nPorts=if allowFlowReversal then 4 else 2,
+    redeclare package Medium = Medium,
+    energyDynamics=energyDynamics,
+    massDynamics=massDynamics,
+    p_start=p_start,
+    T_start=T_start,
+    X_start=X_start,
+    C_start=C_start,
+    C_nominal=C_nominal,
+    allowFlowReversal=allowFlowReversal)       annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=180,
@@ -63,12 +67,14 @@ public
   Fluid.Interfaces.FlowPort_a flowPort_In(redeclare package Medium = Medium)
     annotation (Placement(transformation(extent={{10,90},{30,110}})));
   Modelica.Thermal.HeatTransfer.Components.HeatCapacitor heatCap(C=1012*1.204*V
-        *(corrCV-1), T(start=293.15)) "air capacity"
+        *(corrCV-1), T(start=T_start)) "air capacity"
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
         rotation=90,
         origin={-10,2})));
   Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTem
     annotation (Placement(transformation(extent={{0,-28},{-16,-12}})));
+  parameter Boolean allowFlowReversal=true
+    "= true to allow flow reversal in medium, false restricts to design direction (port_a -> port_b).";
 equation
 
   connect(radDistr.radGain, gainRad) annotation (Line(
@@ -143,17 +149,9 @@ for i in 1:nSurf loop
       color={191,0,0},
       smooth=Smooth.None));
 end for;
-  connect(flowPort_In, vol.ports[1]) annotation (Line(
-      points={{20,100},{20,40},{-7,40}},
-      color={0,128,255},
-      smooth=Smooth.None));
   connect(heatCap.port, gainCon) annotation (Line(
       points={{0,2},{10,2},{10,-30},{100,-30}},
       color={191,0,0},
-      smooth=Smooth.None));
-  connect(flowPort_Out, vol.ports[2]) annotation (Line(
-      points={{-20,100},{-20,40},{-9,40}},
-      color={0,128,255},
       smooth=Smooth.None));
   connect(senTem.port, gainCon) annotation (Line(
       points={{0,-20},{10,-20},{10,-30},{100,-30}},
@@ -163,18 +161,37 @@ end for;
       points={{-16,-20},{-18,-20},{-18,-59.4},{-1.2,-59.4}},
       color={0,0,127},
       smooth=Smooth.None));
-  connect(airLeakage.port_a, vol.ports[3]) annotation (Line(
-      points={{40,40},{-11,40}},
-      color={0,127,255},
-      smooth=Smooth.None));
-  connect(airLeakage.port_b, vol.ports[4]) annotation (Line(
-      points={{60,40},{70,40},{70,14},{-32,14},{-32,40},{-13,40}},
+  connect(airLeakage.port_b, vol.ports[1]) annotation (Line(
+      points={{60,40},{70,40},{70,14},{-32,14},{-32,40},{-10,40}},
       color={0,127,255},
       smooth=Smooth.None));
   connect(radDistr.radSurfTot, radDistrLw.port_a) annotation (Line(
       points={{-54,-34},{-54,-20}},
       color={191,0,0},
       smooth=Smooth.None));
+  connect(vol.ports[2], airLeakage.port_a) annotation (Line(
+      points={{-10,40},{40,40}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  if allowFlowReversal then
+    connect(flowPort_In, vol.ports[3]) annotation (Line(
+      points={{20,100},{20,40},{-10,40}},
+      color={0,0,0},
+      smooth=Smooth.None));
+    connect(flowPort_Out, vol.ports[4]) annotation (Line(
+      points={{-20,100},{-26,100},{-26,98},{-10,98},{-10,40}},
+      color={0,0,0},
+      smooth=Smooth.None));
+  else
+    connect(flowPort_In, vol.ports[1]) annotation (Line(
+      points={{20,100},{20,40},{-10,40}},
+      color={0,0,0},
+      smooth=Smooth.None));
+    connect(flowPort_Out, vol.ports[2]) annotation (Line(
+      points={{-20,100},{-26,100},{-26,98},{-10,98},{-10,40}},
+      color={0,0,0},
+      smooth=Smooth.None));
+  end if;
   annotation (
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
          graphics),

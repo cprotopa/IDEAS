@@ -1,7 +1,7 @@
 within IDEAS.Buildings.Components.BaseClasses;
 model AirLeakage "air leakage due to limied air tightness"
 
-extends IDEAS.Fluid.Interfaces.PartialTwoPortInterface;
+extends IDEAS.Fluid.Interfaces.PartialTwoPortInterface(allowFlowReversal=false);
 
   parameter Modelica.SIunits.Volume V "zone air volume";
   parameter Real n50(min=0.01)=0.4 "n50-value of airtightness";
@@ -14,19 +14,14 @@ extends IDEAS.Fluid.Interfaces.PartialTwoPortInterface;
   Fluid.Sensors.TemperatureTwoPort senTem(
     redeclare package Medium = Medium,
     m_flow_nominal=m_flow_nominal,
-    tau=tau)
+    tau=tau,
+    allowFlowReversal=false)
             annotation (Placement(transformation(extent={{-90,-10},{-70,10}})));
   Fluid.Interfaces.IdealSource       idealSource(
     redeclare package Medium = Medium,
     control_m_flow=true,
     allowFlowReversal=false)
     annotation (Placement(transformation(extent={{0,-10},{20,10}})));
-  Fluid.FixedResistances.Pipe_HeatPort       pipe_HeatPort(
-    redeclare package Medium = Medium,
-    allowFlowReversal=false,
-    dynamicBalance=false,
-    m_flow_nominal=m_flow_nominal)
-    annotation (Placement(transformation(extent={{60,-10},{80,10}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedTemperature
     prescribedTemperature
     annotation (Placement(transformation(extent={{40,60},{60,80}})));
@@ -34,6 +29,15 @@ extends IDEAS.Fluid.Interfaces.PartialTwoPortInterface;
     annotation (Placement(transformation(extent={{0,60},{20,80}})));
   Modelica.Blocks.Sources.RealExpression realExpression1(y=V/3600*n50/20)
     annotation (Placement(transformation(extent={{-40,20},{-20,40}})));
+  Fluid.MixingVolumes.MixingVolume       vol(
+    redeclare package Medium = Medium,
+    energyDynamics= Modelica.Fluid.Types.Dynamics.SteadyState,
+    massDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
+    m_flow_nominal=m_flow_nominal,
+    nPorts=2,
+    allowFlowReversal=false,
+    final V=1)
+    annotation (Placement(transformation(extent={{70,0},{50,20}})));
 equation
 
   connect(port_a, senTem.port_a) annotation (Line(
@@ -44,18 +48,6 @@ equation
       points={{21,70},{38,70}},
       color={0,0,127},
       smooth=Smooth.None));
-  connect(prescribedTemperature.port, pipe_HeatPort.heatPort) annotation (Line(
-      points={{60,70},{70,70},{70,10}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(pipe_HeatPort.port_b, port_b) annotation (Line(
-      points={{80,0},{100,0}},
-      color={0,127,255},
-      smooth=Smooth.None));
-  connect(idealSource.port_b, pipe_HeatPort.port_a) annotation (Line(
-      points={{20,0},{60,0}},
-      color={0,127,255},
-      smooth=Smooth.None));
   connect(senTem.port_b, idealSource.port_a) annotation (Line(
       points={{-70,0},{0,0}},
       color={0,127,255},
@@ -63,6 +55,18 @@ equation
   connect(realExpression1.y, idealSource.m_flow_in) annotation (Line(
       points={{-19,30},{4,30},{4,8}},
       color={0,0,127},
+      smooth=Smooth.None));
+  connect(idealSource.port_b, vol.ports[1]) annotation (Line(
+      points={{20,0},{62,0}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  connect(vol.ports[2], port_b) annotation (Line(
+      points={{58,0},{100,0}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  connect(vol.heatPort, prescribedTemperature.port) annotation (Line(
+      points={{70,10},{74,10},{74,70},{60,70}},
+      color={191,0,0},
       smooth=Smooth.None));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}}),
