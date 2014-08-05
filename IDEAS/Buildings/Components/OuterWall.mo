@@ -8,6 +8,7 @@ model OuterWall "Opaque building envelope construction"
     "Inclination of the wall, i.e. 90deg denotes vertical";
   parameter Modelica.SIunits.Angle azi
     "Azimuth of the wall, i.e. 0deg denotes South";
+  parameter Modelica.SIunits.Temperature T_start=293.15 "Initial temperature";
 
   final parameter Real U_value=1/(1/8 + sum(constructionType.mats.R) + 1/25)
     "Wall U-value";
@@ -30,7 +31,8 @@ model OuterWall "Opaque building envelope construction"
     final inc=inc,
     final nLay=constructionType.nLay,
     final mats=constructionType.mats,
-    final locGain=constructionType.locGain)
+    final locGain=constructionType.locGain,
+    TStart=ones(layMul.nLay)*T_start)
     "declaration of array of resistances and capacitances for wall simulation"
     annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
   IDEAS.Buildings.Components.BaseClasses.ExteriorConvection extCon(final A=
@@ -111,7 +113,7 @@ equation
       index=1,
       extent={{6,3},{6,3}}));
   connect(layMul.area, propsBus_a.area) annotation (Line(
-      points={{0,-20},{0,-20},{0,40},{50,40}},
+      points={{0,-20},{0,40},{50,40}},
       color={0,0,127},
       smooth=Smooth.None), Text(
       string="%second",
