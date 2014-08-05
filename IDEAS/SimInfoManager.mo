@@ -3,7 +3,6 @@ model SimInfoManager
   "Simulation information manager for handling time and climate data required in each for simulation."
   extends PartialSimInfoManager(final useTmy3Reader = true);
 
-
 equation
   solDirPer=weaDat.cheDirNorRad.HOut;
   solDirHor = weaDat.cheGloHorRad.HOut - solDifHor;
@@ -112,8 +111,8 @@ equation
           smooth=Smooth.None,
           fillColor={127,67,62},
           fillPattern=FillPattern.Solid)}),
-    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
-            100}}),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
+            100,100}}),
             graphics),
     Documentation(info="<html>
 </html>"));
