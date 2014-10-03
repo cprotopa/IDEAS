@@ -67,17 +67,17 @@ partial model HeatingSystem "Partial heating/cooling system"
         rotation=180,
         origin={-204,-60})));
 
-  //   parameter Modelica.SIunits.Power[nZones] QNom(each min=0) = ones(nZones)*5000
-  //     "Nominal power, can be seen as the max power of the emission system";
-  //   parameter Real[nZones] VZones "Conditioned volumes of the zones";
-  //   final parameter Modelica.SIunits.HeatCapacity[nZones] C=1012*1.204*VZones*5
-  //     "Heat capacity of the conditioned zones";
-  //
-  //   Modelica.Blocks.Interfaces.RealInput[nZones] TSet
-  //     "Setpoint temperature for the zones" annotation (Placement(transformation(
-  //         extent={{-10,-10},{10,10}},
-  //         rotation=90,
-  //         origin={0,-104})));
+   parameter Modelica.SIunits.Power[nZones] QNom(each min=0) = ones(nZones)*5000
+    "Nominal power, can be seen as the max power of the emission system";
+   parameter Real[nZones] VZones "Conditioned volumes of the zones";
+   final parameter Modelica.SIunits.HeatCapacity[nZones] C=1012*1.204*VZones*5
+    "Heat capacity of the conditioned zones";
+
+   Modelica.Blocks.Interfaces.RealInput[nZones] TSet
+    "Setpoint temperature for the zones"  annotation (Placement(transformation(
+         extent={{-10,-10},{10,10}},
+         rotation=90,
+         origin={0,-104})));
 
 equation
   if nLoads >= 1 then
